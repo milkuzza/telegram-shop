@@ -16,10 +16,10 @@ export class UsersService {
   async create(createUserDto: CreateUserDto): Promise<User> {
     const user = new this.userModel(createUserDto);
     const savedUser = await user.save();
-    
+
     // Cache user data
     await this.cacheUser(savedUser);
-    
+
     return savedUser;
   }
 
@@ -27,31 +27,31 @@ export class UsersService {
     // Try to get from cache first
     const cacheKey = `user:telegram:${telegramId}`;
     const cachedUser = await this.redisService.get(cacheKey);
-    
+
     if (cachedUser) {
       return JSON.parse(cachedUser);
     }
 
     // If not in cache, get from database
     const user = await this.userModel.findOne({ telegramId }).exec();
-    
+
     if (user) {
       await this.cacheUser(user);
     }
-    
+
     return user;
   }
 
   async findById(id: string): Promise<User> {
     const cacheKey = `user:id:${id}`;
     const cachedUser = await this.redisService.get(cacheKey);
-    
+
     if (cachedUser) {
       return JSON.parse(cachedUser);
     }
 
     const user = await this.userModel.findById(id).exec();
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -71,7 +71,7 @@ export class UsersService {
 
     // Update cache
     await this.cacheUser(user);
-    
+
     return user;
   }
 
@@ -89,7 +89,7 @@ export class UsersService {
 
     // Update cache
     await this.cacheUser(user);
-    
+
     return user;
   }
 
@@ -97,12 +97,12 @@ export class UsersService {
     await this.userModel
       .updateOne({ telegramId }, { lastActiveAt: new Date() })
       .exec();
-    
+
     // Update cache
     const user = await this.findByTelegramId(telegramId);
     if (user) {
       user.lastActiveAt = new Date();
-      await this.cacheUser(user);
+      await this.cacheUser(user as UserDocument);
     }
   }
 
@@ -113,7 +113,7 @@ export class UsersService {
     selectedVariant?: string,
   ): Promise<User> {
     const user = await this.userModel.findOne({ telegramId }).exec();
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -134,10 +134,10 @@ export class UsersService {
 
     user.cart.updatedAt = new Date();
     const updatedUser = await user.save();
-    
+
     // Update cache
     await this.cacheUser(updatedUser);
-    
+
     return updatedUser;
   }
 
@@ -147,7 +147,7 @@ export class UsersService {
     selectedVariant?: string,
   ): Promise<User> {
     const user = await this.userModel.findOne({ telegramId }).exec();
-    
+
     if (!user || !user.cart) {
       throw new NotFoundException('User or cart not found');
     }
@@ -158,32 +158,32 @@ export class UsersService {
 
     user.cart.updatedAt = new Date();
     const updatedUser = await user.save();
-    
+
     // Update cache
     await this.cacheUser(updatedUser);
-    
+
     return updatedUser;
   }
 
   async clearCart(telegramId: number): Promise<User> {
     const user = await this.userModel.findOne({ telegramId }).exec();
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     user.cart = { items: [], updatedAt: new Date() };
     const updatedUser = await user.save();
-    
+
     // Update cache
     await this.cacheUser(updatedUser);
-    
+
     return updatedUser;
   }
 
   async addToFavorites(telegramId: number, productId: string): Promise<User> {
     const user = await this.userModel.findOne({ telegramId }).exec();
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
@@ -191,10 +191,10 @@ export class UsersService {
     if (!user.favoriteProducts.includes(productId)) {
       user.favoriteProducts.push(productId);
       const updatedUser = await user.save();
-      
+
       // Update cache
       await this.cacheUser(updatedUser);
-      
+
       return updatedUser;
     }
 
@@ -203,17 +203,17 @@ export class UsersService {
 
   async removeFromFavorites(telegramId: number, productId: string): Promise<User> {
     const user = await this.userModel.findOne({ telegramId }).exec();
-    
+
     if (!user) {
       throw new NotFoundException('User not found');
     }
 
     user.favoriteProducts = user.favoriteProducts.filter(id => id !== productId);
     const updatedUser = await user.save();
-    
+
     // Update cache
     await this.cacheUser(updatedUser);
-    
+
     return updatedUser;
   }
 
@@ -257,7 +257,7 @@ export class UsersService {
     const cacheKey1 = `user:telegram:${user.telegramId}`;
     const cacheKey2 = `user:id:${user._id}`;
     const userData = JSON.stringify(user.toObject());
-    
+
     // Cache for 1 hour
     await this.redisService.set(cacheKey1, userData, 3600);
     await this.redisService.set(cacheKey2, userData, 3600);

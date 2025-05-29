@@ -2,7 +2,7 @@ import { Injectable, NotFoundException } from '@nestjs/common';
 import { ConfigService } from '@nestjs/config';
 import * as fs from 'fs';
 import * as path from 'path';
-import * as sharp from 'sharp';
+import sharp from 'sharp';
 
 @Injectable()
 export class FilesService {
@@ -12,7 +12,7 @@ export class FilesService {
   constructor(private configService: ConfigService) {
     this.uploadPath = path.join(process.cwd(), 'uploads');
     this.baseUrl = this.configService.get<string>('BASE_URL') || 'http://localhost:3000';
-    
+
     // Ensure upload directory exists
     if (!fs.existsSync(this.uploadPath)) {
       fs.mkdirSync(this.uploadPath, { recursive: true });
@@ -27,7 +27,7 @@ export class FilesService {
     thumbnailUrl?: string;
   }> {
     const folderPath = folder ? path.join(this.uploadPath, folder) : this.uploadPath;
-    
+
     // Ensure folder exists
     if (!fs.existsSync(folderPath)) {
       fs.mkdirSync(folderPath, { recursive: true });
@@ -64,7 +64,7 @@ export class FilesService {
     thumbnailUrl?: string;
   }>> {
     const results = [];
-    
+
     for (const file of files) {
       const result = await this.uploadFile(file, folder);
       results.push(result);
@@ -74,7 +74,7 @@ export class FilesService {
   }
 
   async deleteFile(filename: string, folder?: string): Promise<void> {
-    const filePath = folder 
+    const filePath = folder
       ? path.join(this.uploadPath, folder, filename)
       : path.join(this.uploadPath, filename);
 
@@ -96,7 +96,7 @@ export class FilesService {
     mimetype: string;
     size: number;
   }> {
-    const filePath = folder 
+    const filePath = folder
       ? path.join(this.uploadPath, folder, filename)
       : path.join(this.uploadPath, filename);
 
@@ -183,17 +183,17 @@ export class FilesService {
 
     const scanDirectory = (dirPath: string) => {
       const files = fs.readdirSync(dirPath);
-      
+
       for (const file of files) {
         const filePath = path.join(dirPath, file);
         const fileStat = fs.statSync(filePath);
-        
+
         if (fileStat.isDirectory()) {
           scanDirectory(filePath);
         } else {
           stats.totalFiles++;
           stats.totalSize += fileStat.size;
-          
+
           const ext = path.extname(file).toLowerCase();
           if (['.jpg', '.jpeg', '.png', '.gif', '.webp', '.svg'].includes(ext)) {
             stats.imageFiles++;

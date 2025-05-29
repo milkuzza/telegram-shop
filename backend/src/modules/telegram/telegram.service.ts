@@ -26,7 +26,7 @@ export class TelegramService {
       );
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to send message to ${chatId}:`, error.message);
+      this.logger.error(`Failed to send message to ${chatId}:`, (error as Error).message);
       throw error;
     }
   }
@@ -45,7 +45,7 @@ export class TelegramService {
       );
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to send photo to ${chatId}:`, error.message);
+      this.logger.error(`Failed to send photo to ${chatId}:`, (error as Error).message);
       throw error;
     }
   }
@@ -63,7 +63,7 @@ export class TelegramService {
       this.logger.log(`Webhook set to: ${webhookUrl}`);
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to set webhook:', error.message);
+      this.logger.error('Failed to set webhook:', (error as Error).message);
       throw error;
     }
   }
@@ -75,7 +75,7 @@ export class TelegramService {
       );
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to get webhook info:', error.message);
+      this.logger.error('Failed to get webhook info:', (error as Error).message);
       throw error;
     }
   }
@@ -88,7 +88,7 @@ export class TelegramService {
       this.logger.log('Webhook deleted');
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to delete webhook:', error.message);
+      this.logger.error('Failed to delete webhook:', (error as Error).message);
       throw error;
     }
   }
@@ -105,7 +105,7 @@ export class TelegramService {
       );
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to answer pre-checkout query:', error.message);
+      this.logger.error('Failed to answer pre-checkout query:', (error as Error).message);
       throw error;
     }
   }
@@ -118,7 +118,7 @@ export class TelegramService {
       );
       return response.data.result;
     } catch (error) {
-      this.logger.error('Failed to create invoice link:', error.message);
+      this.logger.error('Failed to create invoice link:', (error as Error).message);
       throw error;
     }
   }
@@ -134,7 +134,7 @@ export class TelegramService {
       );
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to send invoice to ${chatId}:`, error.message);
+      this.logger.error(`Failed to send invoice to ${chatId}:`, (error as Error).message);
       throw error;
     }
   }
@@ -150,7 +150,7 @@ export class TelegramService {
       );
       return response.data;
     } catch (error) {
-      this.logger.error(`Failed to set menu button for ${chatId}:`, error.message);
+      this.logger.error(`Failed to set menu button for ${chatId}:`, (error as Error).message);
       throw error;
     }
   }
@@ -165,7 +165,7 @@ export class TelegramService {
       );
       return response.data;
     } catch (error) {
-      this.logger.error('Failed to set bot commands:', error.message);
+      this.logger.error('Failed to set bot commands:', (error as Error).message);
       throw error;
     }
   }
@@ -190,7 +190,7 @@ export class TelegramService {
         await this.handleSuccessfulPayment(update.successful_payment, update.message);
       }
     } catch (error) {
-      this.logger.error('Error handling webhook:', error.message);
+      this.logger.error('Error handling webhook:', (error as Error).message);
     }
   }
 
@@ -229,7 +229,7 @@ export class TelegramService {
   private async handlePreCheckoutQuery(preCheckoutQuery: any): Promise<void> {
     // Validate the order before payment
     const payload = JSON.parse(preCheckoutQuery.invoice_payload);
-    
+
     // Here you would validate the order, check inventory, etc.
     const isValid = true; // Your validation logic
 
@@ -251,7 +251,7 @@ export class TelegramService {
 
   private async sendWelcomeMessage(chatId: number, user: any): Promise<void> {
     const webAppUrl = this.configService.get<string>('WEB_APP_URL');
-    
+
     await this.sendMessage(
       chatId,
       `🛍️ Welcome to Mezohit Store, ${user.first_name}!\n\nDiscover amazing products at great prices. Tap the button below to start shopping!`,
@@ -295,7 +295,7 @@ export class TelegramService {
 
   private async sendShopMessage(chatId: number): Promise<void> {
     const webAppUrl = this.configService.get<string>('WEB_APP_URL');
-    
+
     await this.sendMessage(
       chatId,
       `🛍️ <b>Mezohit Store</b>\n\nBrowse our amazing collection of products!`,
