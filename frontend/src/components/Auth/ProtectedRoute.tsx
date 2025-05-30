@@ -5,6 +5,7 @@ import { RootState, AppDispatch } from '../../store/store';
 import { authenticateWithTelegram } from '../../store/slices/authSlice';
 import { useTelegramWebApp } from '../../hooks/useTelegramWebApp';
 import LoadingScreen from '../UI/LoadingScreen';
+import toast from 'react-hot-toast';
 
 interface ProtectedRouteProps {
   children: React.ReactNode;
@@ -13,11 +14,10 @@ interface ProtectedRouteProps {
 const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
   const dispatch = useDispatch<AppDispatch>();
   const navigate = useNavigate();
-  
+
   const { isAuthenticated, isLoading } = useSelector((state: RootState) => state.auth);
   const { webApp, isReady } = useSelector((state: RootState) => state.telegram);
-  
-  const { showAlert } = useTelegramWebApp();
+  const { isWebAppAvailable } = useTelegramWebApp();
 
   useEffect(() => {
     if (isReady && !isAuthenticated && !isLoading) {
@@ -25,13 +25,18 @@ const ProtectedRoute: React.FC<ProtectedRouteProps> = ({ children }) => {
       if (webApp?.initData) {
         dispatch(authenticateWithTelegram(webApp.initData));
       } else {
-        // No Telegram data available, redirect to home
-        showAlert('Please open this app through Telegram to access this feature.', () => {
+        // No Telegram data available, show toast and redirect
+        if (isWebAppAvailable) {
+          // In Telegram WebApp, just redirect silently
           navigate('/');
-        });
+        } else {
+          // In browser, show toast notification
+          toast.error('Please open this app through Telegram to access this feature.');
+          setTimeout(() => navigate('/'), 2000);
+        }
       }
     }
-  }, [isReady, isAuthenticated, isLoading, webApp, dispatch, navigate, showAlert]);
+  }, [isReady, isAuthenticated, isLoading, webApp, dispatch, navigate, isWebAppAvailable]);
 
   if (isLoading) {
     return <LoadingScreen message="Authenticating..." />;

@@ -2,11 +2,11 @@ import React from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../../store/store';
-import { 
-  updateCartItemQuantity, 
-  removeFromCart, 
+import {
+  updateCartItemQuantity,
+  removeFromCart,
   clearCart,
-  closeCart 
+  closeCart
 } from '../../store/slices/cartSlice';
 import { useTelegramWebApp } from '../../hooks/useTelegramWebApp';
 import { X, Plus, Minus, Trash2, ShoppingBag } from 'lucide-react';
@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 const Cart: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const { items, total, itemCount, isLoading, isOpen } = useSelector((state: RootState) => state.cart);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { hapticFeedback } = useTelegramWebApp();
@@ -35,7 +35,7 @@ const Cart: React.FC = () => {
 
   const handleQuantityChange = async (productId: string, newQuantity: number, selectedVariant?: string) => {
     hapticFeedback.impact('light');
-    
+
     try {
       await dispatch(updateCartItemQuantity({
         productId,
@@ -50,7 +50,7 @@ const Cart: React.FC = () => {
 
   const handleRemoveItem = async (productId: string, selectedVariant?: string) => {
     hapticFeedback.impact('medium');
-    
+
     try {
       await dispatch(removeFromCart({ productId, selectedVariant })).unwrap();
       hapticFeedback.notification('success');
@@ -63,7 +63,7 @@ const Cart: React.FC = () => {
 
   const handleClearCart = async () => {
     hapticFeedback.impact('heavy');
-    
+
     try {
       await dispatch(clearCart()).unwrap();
       hapticFeedback.notification('success');
@@ -76,12 +76,12 @@ const Cart: React.FC = () => {
 
   const handleCheckout = () => {
     hapticFeedback.impact('medium');
-    
+
     if (!isAuthenticated) {
       toast.error('Please login to continue');
       return;
     }
-    
+
     dispatch(closeCart());
     navigate('/checkout');
   };
@@ -97,11 +97,11 @@ const Cart: React.FC = () => {
   return (
     <div className="fixed inset-0 z-50 overflow-hidden">
       {/* Backdrop */}
-      <div 
+      <div
         className="absolute inset-0 bg-black bg-opacity-50"
         onClick={handleClose}
       />
-      
+
       {/* Cart Panel */}
       <div className="absolute right-0 top-0 h-full w-full max-w-md bg-white shadow-xl">
         <div className="flex flex-col h-full">
@@ -158,7 +158,7 @@ const Cart: React.FC = () => {
 
                 {/* Cart Items */}
                 {items.map((item) => (
-                  <div key={`${item.productId}-${item.selectedVariant || 'default'}`} 
+                  <div key={`${item.productId}-${item.selectedVariant || 'default'}`}
                        className="border border-telegram-border rounded-lg p-3">
                     <div className="flex space-x-3">
                       {/* Product Image */}
@@ -181,7 +181,7 @@ const Cart: React.FC = () => {
                         <h3 className="font-medium text-telegram-text text-sm mb-1 line-clamp-2">
                           {item.name}
                         </h3>
-                        
+
                         {item.selectedVariant && (
                           <p className="text-xs text-telegram-text-secondary mb-2">
                             {item.selectedVariant}
@@ -193,8 +193,8 @@ const Cart: React.FC = () => {
                           <div className="flex items-center space-x-2">
                             <button
                               onClick={() => handleQuantityChange(
-                                item.productId, 
-                                item.quantity - 1, 
+                                item.productId,
+                                item.quantity - 1,
                                 item.selectedVariant
                               )}
                               disabled={item.quantity <= 1}
@@ -202,18 +202,18 @@ const Cart: React.FC = () => {
                             >
                               <Minus className="w-3 h-3" />
                             </button>
-                            
+
                             <span className="text-sm font-medium w-8 text-center">
                               {item.quantity}
                             </span>
-                            
+
                             <button
                               onClick={() => handleQuantityChange(
-                                item.productId, 
-                                item.quantity + 1, 
+                                item.productId,
+                                item.quantity + 1,
                                 item.selectedVariant
                               )}
-                              disabled={item.maxQuantity && item.quantity >= item.maxQuantity}
+                              disabled={item.maxQuantity !== undefined && item.quantity >= item.maxQuantity}
                               className="p-1 border border-telegram-border rounded disabled:opacity-50"
                             >
                               <Plus className="w-3 h-3" />
@@ -266,7 +266,7 @@ const Cart: React.FC = () => {
                 >
                   {isAuthenticated ? 'Checkout' : 'Login to Checkout'}
                 </button>
-                
+
                 <button
                   onClick={handleContinueShopping}
                   className="w-full btn-secondary"

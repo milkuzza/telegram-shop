@@ -2,11 +2,11 @@ import React, { useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
-import { 
-  updateCartItemQuantity, 
-  removeFromCart, 
+import {
+  updateCartItemQuantity,
+  removeFromCart,
   clearCart,
-  syncCartWithServer 
+  syncCartWithServer
 } from '../store/slices/cartSlice';
 import { useTelegramWebApp } from '../hooks/useTelegramWebApp';
 import { Trash2, Plus, Minus, ShoppingBag } from 'lucide-react';
@@ -16,7 +16,7 @@ import toast from 'react-hot-toast';
 const CartPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const { items, total, itemCount, isLoading } = useSelector((state: RootState) => state.cart);
   const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { hapticFeedback, showMainButton, hideMainButton } = useTelegramWebApp();
@@ -27,16 +27,6 @@ const CartPage: React.FC = () => {
     }
   }, [dispatch, isAuthenticated]);
 
-  useEffect(() => {
-    if (items.length > 0) {
-      showMainButton(`Checkout (${formatPrice(total)})`, handleCheckout);
-    } else {
-      hideMainButton();
-    }
-    
-    return () => hideMainButton();
-  }, [items.length, total]);
-
   const formatPrice = (price: number, currency: string = 'USD') => {
     return new Intl.NumberFormat('en-US', {
       style: 'currency',
@@ -44,9 +34,30 @@ const CartPage: React.FC = () => {
     }).format(price);
   };
 
+  const handleCheckout = () => {
+    hapticFeedback.impact('medium');
+
+    if (!isAuthenticated) {
+      toast.error('Please login to continue');
+      return;
+    }
+
+    navigate('/checkout');
+  };
+
+  useEffect(() => {
+    if (items.length > 0) {
+      showMainButton(`Checkout (${formatPrice(total)})`, handleCheckout);
+    } else {
+      hideMainButton();
+    }
+
+    return () => hideMainButton();
+  }, [items.length, total, showMainButton, hideMainButton, handleCheckout]);
+
   const handleQuantityChange = async (productId: string, newQuantity: number, selectedVariant?: string) => {
     hapticFeedback.impact('light');
-    
+
     try {
       await dispatch(updateCartItemQuantity({
         productId,
@@ -61,7 +72,7 @@ const CartPage: React.FC = () => {
 
   const handleRemoveItem = async (productId: string, selectedVariant?: string) => {
     hapticFeedback.impact('medium');
-    
+
     try {
       await dispatch(removeFromCart({ productId, selectedVariant })).unwrap();
       hapticFeedback.notification('success');
@@ -74,7 +85,7 @@ const CartPage: React.FC = () => {
 
   const handleClearCart = async () => {
     hapticFeedback.impact('heavy');
-    
+
     try {
       await dispatch(clearCart()).unwrap();
       hapticFeedback.notification('success');
@@ -83,17 +94,6 @@ const CartPage: React.FC = () => {
       hapticFeedback.notification('error');
       toast.error('Failed to clear cart');
     }
-  };
-
-  const handleCheckout = () => {
-    hapticFeedback.impact('medium');
-    
-    if (!isAuthenticated) {
-      toast.error('Please login to continue');
-      return;
-    }
-    
-    navigate('/checkout');
   };
 
   const handleContinueShopping = () => {
@@ -155,7 +155,7 @@ const CartPage: React.FC = () => {
       {/* Cart Items */}
       <div className="p-4 space-y-4">
         {items.map((item) => (
-          <div key={`${item.productId}-${item.selectedVariant || 'default'}`} 
+          <div key={`${item.productId}-${item.selectedVariant || 'default'}`}
                className="bg-white rounded-lg border border-telegram-border p-4">
             <div className="flex space-x-4">
               {/* Product Image */}
@@ -178,7 +178,7 @@ const CartPage: React.FC = () => {
                 <h3 className="font-medium text-telegram-text mb-1 line-clamp-2">
                   {item.name}
                 </h3>
-                
+
                 {item.selectedVariant && (
                   <p className="text-sm text-telegram-text-secondary mb-2">
                     Variant: {item.selectedVariant}
@@ -191,8 +191,8 @@ const CartPage: React.FC = () => {
                     <div className="flex items-center space-x-2">
                       <button
                         onClick={() => handleQuantityChange(
-                          item.productId, 
-                          item.quantity - 1, 
+                          item.productId,
+                          item.quantity - 1,
                           item.selectedVariant
                         )}
                         disabled={item.quantity <= 1}
@@ -200,18 +200,18 @@ const CartPage: React.FC = () => {
                       >
                         <Minus className="w-3 h-3" />
                       </button>
-                      
+
                       <span className="text-sm font-medium w-8 text-center">
                         {item.quantity}
                       </span>
-                      
+
                       <button
                         onClick={() => handleQuantityChange(
-                          item.productId, 
-                          item.quantity + 1, 
+                          item.productId,
+                          item.quantity + 1,
                           item.selectedVariant
                         )}
-                        disabled={item.maxQuantity && item.quantity >= item.maxQuantity}
+                        disabled={item.maxQuantity !== undefined && item.quantity >= item.maxQuantity}
                         className="p-1 border border-telegram-border rounded disabled:opacity-50"
                       >
                         <Plus className="w-3 h-3" />
@@ -247,7 +247,7 @@ const CartPage: React.FC = () => {
       <div className="p-4">
         <div className="bg-white rounded-lg border border-telegram-border p-4">
           <h3 className="font-semibold text-telegram-text mb-4">Order Summary</h3>
-          
+
           <div className="space-y-2 mb-4">
             <div className="flex justify-between text-sm">
               <span className="text-telegram-text-secondary">Subtotal ({itemCount} items)</span>
@@ -262,7 +262,7 @@ const CartPage: React.FC = () => {
               <span className="text-telegram-text">Calculated at checkout</span>
             </div>
           </div>
-          
+
           <div className="border-t border-telegram-border pt-4">
             <div className="flex justify-between items-center">
               <span className="text-lg font-semibold text-telegram-text">Total</span>

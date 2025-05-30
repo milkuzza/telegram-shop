@@ -3,11 +3,13 @@ import { MulterModule } from '@nestjs/platform-express';
 import { ConfigModule, ConfigService } from '@nestjs/config';
 import { FilesController } from './files.controller';
 import { FilesService } from './files.service';
+import { AuthModule } from '../auth/auth.module';
 import { diskStorage } from 'multer';
 import { extname } from 'path';
 
 @Module({
   imports: [
+    AuthModule,
     MulterModule.registerAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({

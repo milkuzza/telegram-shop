@@ -1,4 +1,4 @@
-import axios, { AxiosInstance, AxiosRequestConfig } from 'axios';
+import axios, { AxiosInstance } from 'axios';
 
 // Create axios instance
 const api: AxiosInstance = axios.create({
@@ -12,17 +12,28 @@ const api: AxiosInstance = axios.create({
 // Request interceptor to add auth token
 api.interceptors.request.use(
   (config) => {
-    const token = localStorage.getItem('token');
-    if (token) {
-      config.headers.Authorization = `Bearer ${token}`;
+    // Check if this is an admin request
+    if (config.url?.includes('/admin/')) {
+      const adminToken = localStorage.getItem('adminToken');
+      if (adminToken) {
+        config.headers.Authorization = `Bearer ${adminToken}`;
+      }
+    } else {
+      // Regular user token
+      const token = localStorage.getItem('token');
+      if (token) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
     }
-    
-    // Add Telegram init data if available
-    const telegramInitData = (window as any).Telegram?.WebApp?.initData;
-    if (telegramInitData) {
-      config.headers['X-Telegram-Init-Data'] = telegramInitData;
+
+    // Add Telegram init data if available (only for non-admin requests)
+    if (!config.url?.includes('/admin/')) {
+      const telegramInitData = (window as any).Telegram?.WebApp?.initData;
+      if (telegramInitData) {
+        config.headers['X-Telegram-Init-Data'] = telegramInitData;
+      }
     }
-    
+
     return config;
   },
   (error) => {
@@ -35,131 +46,159 @@ api.interceptors.response.use(
   (response) => response.data,
   (error) => {
     if (error.response?.status === 401) {
-      localStorage.removeItem('token');
-      window.location.href = '/';
+      // Check if this was an admin request
+      if (error.config?.url?.includes('/admin/')) {
+        localStorage.removeItem('adminToken');
+        localStorage.removeItem('adminUser');
+        window.location.href = '/admin/login';
+      } else {
+        localStorage.removeItem('token');
+        window.location.href = '/';
+      }
     }
     return Promise.reject(error);
   }
 );
 
+// Type-safe API calls (since interceptor extracts data)
+const apiGet = async <T = any>(url: string, params?: any): Promise<T> => {
+  const response = await api.get(url, { params });
+  return response as T;
+};
+
+const apiPost = async <T = any>(url: string, data?: any, config?: any): Promise<T> => {
+  const response = await api.post(url, data, config);
+  return response as T;
+};
+
+const apiPatch = async <T = any>(url: string, data?: any): Promise<T> => {
+  const response = await api.patch(url, data);
+  return response as T;
+};
+
+const apiDelete = async <T = any>(url: string): Promise<T> => {
+  const response = await api.delete(url);
+  return response as T;
+};
+
 // Auth API
 export const authAPI = {
   telegramAuth: (initData: string) =>
-    api.post('/auth/telegram', { initData }),
-  
+    apiPost('/auth/telegram', { initData }),
+
   getMe: () =>
-    api.get('/auth/me'),
-  
+    apiGet('/auth/me'),
+
   validateToken: (token: string) =>
-    api.post('/auth/validate', { token }),
-  
+    apiPost('/auth/validate', { token }),
+
   generateWebAppUrl: (startParam?: string) =>
-    api.get('/auth/webapp-url', { params: { startParam } }),
+    apiGet('/auth/webapp-url', { startParam }),
 };
 
 // Users API
 export const usersAPI = {
   getProfile: () =>
-    api.get('/users/profile'),
-  
+    apiGet('/users/profile'),
+
   updateProfile: (data: any) =>
-    api.patch('/users/profile', data),
-  
+    apiPatch('/users/profile', data),
+
   addToCart: (productId: string, quantity: number, selectedVariant?: string) =>
-    api.post('/users/cart/add', { productId, quantity, selectedVariant }),
-  
+    apiPost('/users/cart/add', { productId, quantity, selectedVariant }),
+
   removeFromCart: (productId: string, selectedVariant?: string) =>
-    api.post('/users/cart/remove', { productId, selectedVariant }),
-  
+    apiPost('/users/cart/remove', { productId, selectedVariant }),
+
   clearCart: () =>
-    api.post('/users/cart/clear'),
-  
+    apiPost('/users/cart/clear'),
+
   addToFavorites: (productId: string) =>
-    api.post(`/users/favorites/add/${productId}`),
-  
+    apiPost(`/users/favorites/add/${productId}`),
+
   removeFromFavorites: (productId: string) =>
-    api.post(`/users/favorites/remove/${productId}`),
+    apiPost(`/users/favorites/remove/${productId}`),
 };
 
 // Products API
 export const productsAPI = {
   getProducts: (params: any = {}) =>
-    api.get('/products', { params }),
-  
+    apiGet('/products', params),
+
   getProductById: (id: string) =>
-    api.get(`/products/${id}`),
-  
+    apiGet(`/products/${id}`),
+
   getFeaturedProducts: (limit: number = 10) =>
-    api.get('/products/featured', { params: { limit } }),
-  
+    apiGet('/products/featured', { limit }),
+
   getRelatedProducts: (productId: string, limit: number = 5) =>
-    api.get(`/products/${productId}/related`, { params: { limit } }),
-  
+    apiGet(`/products/${productId}/related`, { limit }),
+
   searchProducts: (query: string, limit: number = 20) =>
-    api.get('/products/search', { params: { q: query, limit } }),
-  
+    apiGet('/products/search', { q: query, limit }),
+
   addReview: (productId: string, rating: number, comment: string) =>
-    api.post(`/products/${productId}/review`, { rating, comment }),
-  
+    apiPost(`/products/${productId}/review`, { rating, comment }),
+
   getProductStats: () =>
-    api.get('/products/stats'),
+    apiGet('/products/stats'),
 };
 
 // Categories API
 export const categoriesAPI = {
   getCategories: () =>
-    api.get('/categories'),
-  
+    apiGet('/categories'),
+
   getCategoryTree: () =>
-    api.get('/categories/tree'),
-  
+    apiGet('/categories/tree'),
+
   getCategoryById: (id: string) =>
-    api.get(`/categories/${id}`),
-  
+    apiGet(`/categories/${id}`),
+
   getCategoryBySlug: (slug: string) =>
-    api.get(`/categories/slug/${slug}`),
-  
+    apiGet(`/categories/slug/${slug}`),
+
   getCategoryChildren: (parentId: string) =>
-    api.get(`/categories/${parentId}/children`),
-  
+    apiGet(`/categories/${parentId}/children`),
+
   getCategoryStats: () =>
-    api.get('/categories/stats'),
+    apiGet('/categories/stats'),
 };
 
 // Orders API
 export const ordersAPI = {
   getOrders: (params: any = {}) =>
-    api.get('/orders', { params }),
-  
+    apiGet('/orders', params),
+
   getOrderById: (id: string) =>
-    api.get(`/orders/${id}`),
-  
+    apiGet(`/orders/${id}`),
+
   createOrder: (orderData: any) =>
-    api.post('/orders', orderData),
-  
+    apiPost('/orders', orderData),
+
   updateOrder: (id: string, data: any) =>
-    api.patch(`/orders/${id}`, data),
-  
+    apiPatch(`/orders/${id}`, data),
+
   cancelOrder: (id: string, reason?: string) =>
-    api.post(`/orders/${id}/cancel`, { reason }),
-  
+    apiPost(`/orders/${id}/cancel`, { reason }),
+
   getOrderStats: () =>
-    api.get('/orders/stats'),
+    apiGet('/orders/stats'),
 };
 
 // Payments API
 export const paymentsAPI = {
   createPaymentIntent: (orderData: any) =>
-    api.post('/payments/create-intent', orderData),
-  
+    apiPost('/payments/create-intent', orderData),
+
   confirmPayment: (paymentId: string, paymentData: any) =>
-    api.post(`/payments/${paymentId}/confirm`, paymentData),
-  
+    apiPost(`/payments/${paymentId}/confirm`, paymentData),
+
   getPaymentMethods: () =>
-    api.get('/payments/methods'),
-  
+    apiGet('/payments/methods'),
+
   processRefund: (paymentId: string, amount?: number) =>
-    api.post(`/payments/${paymentId}/refund`, { amount }),
+    apiPost(`/payments/${paymentId}/refund`, { amount }),
 };
 
 // Files API
@@ -168,91 +207,114 @@ export const filesAPI = {
     const formData = new FormData();
     formData.append('file', file);
     if (folder) formData.append('folder', folder);
-    
+
     return api.post('/files/upload', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
   },
-  
+
   uploadMultipleFiles: (files: File[], folder?: string) => {
     const formData = new FormData();
     files.forEach(file => formData.append('files', file));
     if (folder) formData.append('folder', folder);
-    
+
     return api.post('/files/upload-multiple', formData, {
       headers: {
         'Content-Type': 'multipart/form-data',
       },
     });
   },
-  
+
   deleteFile: (filename: string) =>
-    api.delete(`/files/${filename}`),
+    apiDelete(`/files/${filename}`),
 };
 
 // Telegram API
 export const telegramAPI = {
   sendMessage: (chatId: number, message: string) =>
-    api.post('/telegram/send-message', { chatId, message }),
-  
+    apiPost('/telegram/send-message', { chatId, message }),
+
   sendNotification: (userId: string, notification: any) =>
-    api.post('/telegram/send-notification', { userId, notification }),
-  
+    apiPost('/telegram/send-notification', { userId, notification }),
+
   setWebhook: (url: string) =>
-    api.post('/telegram/set-webhook', { url }),
-  
+    apiPost('/telegram/set-webhook', { url }),
+
   getWebhookInfo: () =>
-    api.get('/telegram/webhook-info'),
+    apiGet('/telegram/webhook-info'),
 };
 
 // Admin API (for admin panel)
 export const adminAPI = {
+  // Auth
+  login: (credentials: { email: string; password: string }) =>
+    apiPost('/admin/auth/login', credentials),
+
+  logout: () =>
+    apiPost('/admin/auth/logout'),
+
   // Dashboard
   getDashboardStats: () =>
-    api.get('/admin/dashboard/stats'),
-  
+    apiGet('/admin/dashboard/stats'),
+
   // Products management
   createProduct: (productData: any) =>
-    api.post('/admin/products', productData),
-  
+    apiPost('/products', productData),
+
   updateProduct: (id: string, productData: any) =>
-    api.patch(`/admin/products/${id}`, productData),
-  
+    apiPatch(`/products/${id}`, productData),
+
   deleteProduct: (id: string) =>
-    api.delete(`/admin/products/${id}`),
-  
+    apiDelete(`/products/${id}`),
+
   // Categories management
   createCategory: (categoryData: any) =>
-    api.post('/admin/categories', categoryData),
-  
+    apiPost('/categories', categoryData),
+
   updateCategory: (id: string, categoryData: any) =>
-    api.patch(`/admin/categories/${id}`, categoryData),
-  
+    apiPatch(`/categories/${id}`, categoryData),
+
   deleteCategory: (id: string) =>
-    api.delete(`/admin/categories/${id}`),
-  
+    apiDelete(`/categories/${id}`),
+
   // Orders management
+  getOrders: (params?: any) =>
+    apiGet('/admin/orders', params),
+
+  getOrderById: (id: string) =>
+    apiGet(`/admin/orders/${id}`),
+
   updateOrderStatus: (id: string, status: string, note?: string) =>
-    api.patch(`/admin/orders/${id}/status`, { status, note }),
-  
+    apiPatch(`/admin/orders/${id}/status`, { status, note }),
+
   // Users management
   getUsers: (params: any = {}) =>
-    api.get('/admin/users', { params }),
-  
+    apiGet('/admin/users', params),
+
   getUserById: (id: string) =>
-    api.get(`/admin/users/${id}`),
-  
+    apiGet(`/admin/users/${id}`),
+
   updateUser: (id: string, userData: any) =>
-    api.patch(`/admin/users/${id}`, userData),
-  
+    apiPatch(`/admin/users/${id}`, userData),
+
+  deleteUser: (id: string) =>
+    apiDelete(`/admin/users/${id}`),
+
+  // Analytics
+  getAnalytics: (timeRange?: string) =>
+    apiGet('/admin/analytics', { timeRange }),
+
+  getReports: (type: string, params?: any) =>
+    apiGet(`/admin/reports/${type}`, params),
+
   // Settings
   getSettings: () =>
-    api.get('/admin/settings'),
-  
+    apiGet('/admin/settings'),
+
   updateSettings: (settings: any) =>
-    api.patch('/admin/settings', settings),
+    apiPatch('/admin/settings', settings),
 };
 
 export default api;

@@ -19,13 +19,14 @@ export class ProductsService {
   async create(createProductDto: CreateProductDto): Promise<Product> {
     const product = new this.productModel(createProductDto);
     const savedProduct = await product.save();
-    
+
     // Update category product count
-    await this.updateCategoryProductCount(createProductDto.categoryId);
-    
+    await this.updateCategoryProductCount(new Types.ObjectId(createProductDto.categoryId));
+
     // Clear cache
     await this.clearProductCache();
-    
+    await this.clearCategoryCache();
+
     return savedProduct;
   }
 
@@ -52,7 +53,7 @@ export class ProductsService {
     // Build cache key
     const cacheKey = `products:${JSON.stringify(query)}`;
     const cachedResult = await this.redisService.get(cacheKey);
-    
+
     if (cachedResult) {
       return JSON.parse(cachedResult);
     }
@@ -62,6 +63,7 @@ export class ProductsService {
 
     if (category) {
       filter.categoryId = new Types.ObjectId(category);
+      console.log('Filtering by category:', category, 'ObjectId:', filter.categoryId);
     }
 
     if (search) {
@@ -88,7 +90,7 @@ export class ProductsService {
 
     // Execute query
     const skip = (page - 1) * limit;
-    
+
     const [products, total] = await Promise.all([
       this.productModel
         .find(filter)
@@ -117,7 +119,7 @@ export class ProductsService {
   async findOne(id: string): Promise<Product> {
     const cacheKey = `product:${id}`;
     const cachedProduct = await this.redisService.get(cacheKey);
-    
+
     if (cachedProduct) {
       return JSON.parse(cachedProduct);
     }
@@ -157,6 +159,8 @@ export class ProductsService {
   }
 
   async update(id: string, updateProductDto: UpdateProductDto): Promise<Product> {
+    const oldProduct = await this.productModel.findById(id);
+
     const product = await this.productModel
       .findByIdAndUpdate(id, updateProductDto, { new: true })
       .populate('categoryId', 'name slug')
@@ -166,8 +170,22 @@ export class ProductsService {
       throw new NotFoundException('Product not found');
     }
 
+    // Update category counts if category changed
+    if (oldProduct && 'categoryId' in updateProductDto && updateProductDto.categoryId &&
+        oldProduct.categoryId.toString() !== updateProductDto.categoryId.toString()) {
+      await this.updateCategoryProductCount(oldProduct.categoryId);
+      await this.updateCategoryProductCount(
+        typeof updateProductDto.categoryId === 'string'
+          ? new Types.ObjectId(updateProductDto.categoryId)
+          : updateProductDto.categoryId as Types.ObjectId
+      );
+    } else if (oldProduct) {
+      await this.updateCategoryProductCount(oldProduct.categoryId);
+    }
+
     // Clear cache
     await this.clearProductCache();
+    await this.clearCategoryCache();
     await this.redisService.del(`product:${id}`);
 
     return product;
@@ -175,25 +193,26 @@ export class ProductsService {
 
   async remove(id: string): Promise<void> {
     const product = await this.productModel.findById(id);
-    
+
     if (!product) {
       throw new NotFoundException('Product not found');
     }
 
     await this.productModel.findByIdAndDelete(id);
-    
+
     // Update category product count
     await this.updateCategoryProductCount(product.categoryId);
-    
+
     // Clear cache
     await this.clearProductCache();
+    await this.clearCategoryCache();
     await this.redisService.del(`product:${id}`);
   }
 
   async getFeatured(limit: number = 10): Promise<Product[]> {
     const cacheKey = `products:featured:${limit}`;
     const cachedProducts = await this.redisService.get(cacheKey);
-    
+
     if (cachedProducts) {
       return JSON.parse(cachedProducts);
     }
@@ -213,7 +232,7 @@ export class ProductsService {
 
   async getRelated(productId: string, limit: number = 5): Promise<Product[]> {
     const product = await this.productModel.findById(productId);
-    
+
     if (!product) {
       return [];
     }
@@ -235,7 +254,7 @@ export class ProductsService {
   async search(query: string, limit: number = 20): Promise<Product[]> {
     const cacheKey = `products:search:${query}:${limit}`;
     const cachedResults = await this.redisService.get(cacheKey);
-    
+
     if (cachedResults) {
       return JSON.parse(cachedResults);
     }
@@ -263,7 +282,7 @@ export class ProductsService {
     comment: string,
   ): Promise<Product> {
     const product = await this.productModel.findById(productId);
-    
+
     if (!product) {
       throw new NotFoundException('Product not found');
     }
@@ -287,7 +306,7 @@ export class ProductsService {
     product.reviewCount = product.reviews.length;
 
     const updatedProduct = await product.save();
-    
+
     // Clear cache
     await this.redisService.del(`product:${productId}`);
 
@@ -336,5 +355,16 @@ export class ProductsService {
     if (keys.length > 0) {
       await Promise.all(keys.map(key => this.redisService.del(key)));
     }
+  }
+
+  private async clearCategoryCache(): Promise<void> {
+    const keys = await this.redisService.keys('categories:*');
+    if (keys.length > 0) {
+      await Promise.all(keys.map(key => this.redisService.del(key)));
+    }
+  }
+
+  async count(): Promise<number> {
+    return this.productModel.countDocuments();
   }
 }

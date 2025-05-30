@@ -20,8 +20,8 @@ export const store = configureStore({
   middleware: (getDefaultMiddleware) =>
     getDefaultMiddleware({
       serializableCheck: {
-        ignoredActions: ['telegram/setWebApp'],
-        ignoredPaths: ['telegram.webApp'],
+        ignoredActions: ['telegram/setWebApp', 'telegram/initialize/fulfilled'],
+        ignoredPaths: ['telegram.webApp', 'telegram.user'],
       },
     }),
   devTools: process.env.NODE_ENV !== 'production',

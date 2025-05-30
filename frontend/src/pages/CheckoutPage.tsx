@@ -27,14 +27,14 @@ interface CheckoutForm {
 const CheckoutPage: React.FC = () => {
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const { items, total } = useSelector((state: RootState) => state.cart);
   const { user } = useSelector((state: RootState) => state.auth);
   const { isCreating } = useSelector((state: RootState) => state.orders);
-  
+
   const [paymentMethod, setPaymentMethod] = useState('telegram');
   const [shippingMethod, setShippingMethod] = useState('standard');
-  
+
   const { hapticFeedback, showMainButton, hideMainButton, webApp } = useTelegramWebApp();
 
   const {
@@ -137,27 +137,31 @@ const CheckoutPage: React.FC = () => {
 
       if (paymentMethod === 'telegram' && webApp) {
         // Use Telegram Payments
-        const invoice = {
-          title: 'Mezohit Store Order',
-          description: `Order with ${items.length} items`,
-          payload: JSON.stringify({ orderData }),
-          provider_token: process.env.REACT_APP_TELEGRAM_PAYMENT_PROVIDER_TOKEN,
-          currency: 'USD',
-          prices: [
-            { label: 'Subtotal', amount: Math.round(total * 100) },
-            { label: 'Shipping', amount: Math.round(getShippingCost() * 100) },
-            { label: 'Tax', amount: Math.round(getTaxAmount() * 100) },
-          ],
-        };
+        // const invoice = {
+        //   title: 'Mezohit Store Order',
+        //   description: `Order with ${items.length} items`,
+        //   payload: JSON.stringify({ orderData }),
+        //   provider_token: process.env.REACT_APP_TELEGRAM_PAYMENT_PROVIDER_TOKEN,
+        //   currency: 'USD',
+        //   prices: [
+        //     { label: 'Subtotal', amount: Math.round(total * 100) },
+        //     { label: 'Shipping', amount: Math.round(getShippingCost() * 100) },
+        //     { label: 'Tax', amount: Math.round(getTaxAmount() * 100) },
+        //   ],
+        // };
 
-        webApp.openInvoice(invoice, (status: string) => {
-          if (status === 'paid') {
-            handlePaymentSuccess(orderData);
-          } else {
-            hapticFeedback.notification('error');
-            toast.error('Payment cancelled');
-          }
-        });
+        // Telegram Payments not available in development
+        // webApp.openInvoice(invoice, (status: string) => {
+        //   if (status === 'paid') {
+        //     handlePaymentSuccess(orderData);
+        //   } else {
+        //     hapticFeedback.notification('error');
+        //     toast.error('Payment cancelled');
+        //   }
+        // });
+
+        // For development, directly process the order
+        await handlePaymentSuccess(orderData);
       } else {
         // Direct order creation (for other payment methods)
         await handlePaymentSuccess(orderData);
@@ -172,11 +176,11 @@ const CheckoutPage: React.FC = () => {
     try {
       const order = await dispatch(createOrder(orderData)).unwrap();
       await dispatch(clearCart());
-      
+
       hapticFeedback.notification('success');
       toast.success('Order placed successfully!');
-      
-      navigate(`/orders/${order._id}`);
+
+      navigate(`/orders/${order.id || order._id}`);
     } catch (error) {
       hapticFeedback.notification('error');
       toast.error('Failed to create order');
@@ -195,7 +199,7 @@ const CheckoutPage: React.FC = () => {
           <h2 className="text-lg font-semibold mb-4">Order Summary</h2>
           <div className="space-y-2">
             {items.map((item) => (
-              <div key={`${item.productId}-${item.selectedVariant}`} 
+              <div key={`${item.productId}-${item.selectedVariant}`}
                    className="flex justify-between text-sm">
                 <span>{item.name} × {item.quantity}</span>
                 <span>{formatPrice(item.price * item.quantity)}</span>
@@ -210,7 +214,7 @@ const CheckoutPage: React.FC = () => {
             <MapPin className="w-5 h-5 text-telegram-blue mr-2" />
             <h2 className="text-lg font-semibold">Shipping Address</h2>
           </div>
-          
+
           <div className="grid grid-cols-2 gap-4">
             <div>
               <label className="block text-sm font-medium mb-1">First Name</label>
@@ -223,7 +227,7 @@ const CheckoutPage: React.FC = () => {
                 <p className="text-error-500 text-xs mt-1">{errors.firstName.message}</p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Last Name</label>
               <input
@@ -283,7 +287,7 @@ const CheckoutPage: React.FC = () => {
                 <p className="text-error-500 text-xs mt-1">{errors.city.message}</p>
               )}
             </div>
-            
+
             <div>
               <label className="block text-sm font-medium mb-1">Postal Code</label>
               <input
@@ -323,7 +327,7 @@ const CheckoutPage: React.FC = () => {
             <Truck className="w-5 h-5 text-telegram-blue mr-2" />
             <h2 className="text-lg font-semibold">Shipping Method</h2>
           </div>
-          
+
           <div className="space-y-3">
             {[
               { id: 'standard', name: 'Standard Shipping', time: '5-7 business days', price: 5.99 },
@@ -355,7 +359,7 @@ const CheckoutPage: React.FC = () => {
             <CreditCard className="w-5 h-5 text-telegram-blue mr-2" />
             <h2 className="text-lg font-semibold">Payment Method</h2>
           </div>
-          
+
           <div className="space-y-3">
             <label className="flex items-center p-3 border border-telegram-border rounded-lg cursor-pointer">
               <input

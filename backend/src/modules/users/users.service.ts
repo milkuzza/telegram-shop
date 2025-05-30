@@ -262,4 +262,12 @@ export class UsersService {
     await this.redisService.set(cacheKey1, userData, 3600);
     await this.redisService.set(cacheKey2, userData, 3600);
   }
+
+  async count(): Promise<number> {
+    return this.userModel.countDocuments();
+  }
+
+  async findAll(): Promise<User[]> {
+    return this.userModel.find().select('-__v').exec();
+  }
 }

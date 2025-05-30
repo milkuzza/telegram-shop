@@ -33,7 +33,10 @@ export class CategoriesController {
   @ApiOperation({ summary: 'Get all categories' })
   @ApiResponse({ status: 200, description: 'Categories retrieved successfully' })
   findAll(@Query('parent') parent?: string) {
-    return this.categoriesService.findAll(parent);
+    if (parent) {
+      return this.categoriesService.findChildren(parent);
+    }
+    return this.categoriesService.findAll();
   }
 
   @Get(':id')

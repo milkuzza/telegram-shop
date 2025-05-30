@@ -4,16 +4,16 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
 import { fetchOrderById, cancelOrder } from '../store/slices/ordersSlice';
 import { useTelegramWebApp } from '../hooks/useTelegramWebApp';
-import { 
-  Package, 
-  Clock, 
-  CheckCircle, 
-  XCircle, 
-  Truck, 
-  MapPin, 
+import {
+  Package,
+  Clock,
+  CheckCircle,
+  XCircle,
+  Truck,
+  MapPin,
   CreditCard,
   Phone,
-  Mail
+
 } from 'lucide-react';
 import LoadingSpinner from '../components/UI/LoadingSpinner';
 import toast from 'react-hot-toast';
@@ -22,7 +22,7 @@ const OrderDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const { currentOrder, isLoadingCurrent } = useSelector((state: RootState) => state.orders);
   const { hapticFeedback, showMainButton, hideMainButton } = useTelegramWebApp();
 
@@ -38,7 +38,7 @@ const OrderDetailPage: React.FC = () => {
     } else {
       hideMainButton();
     }
-    
+
     return () => hideMainButton();
   }, [currentOrder]);
 
@@ -99,15 +99,15 @@ const OrderDetailPage: React.FC = () => {
 
   const handleCancelOrder = async () => {
     if (!currentOrder) return;
-    
+
     hapticFeedback.impact('medium');
-    
+
     try {
-      await dispatch(cancelOrder({ 
-        orderId: currentOrder._id, 
-        reason: 'Cancelled by customer' 
+      await dispatch(cancelOrder({
+        orderId: currentOrder._id,
+        reason: 'Cancelled by customer'
       })).unwrap();
-      
+
       hapticFeedback.notification('success');
       toast.success('Order cancelled successfully');
     } catch (error) {
@@ -120,14 +120,14 @@ const OrderDetailPage: React.FC = () => {
     if (currentOrder?.trackingNumber) {
       hapticFeedback.impact('light');
       // Open tracking URL or show tracking info
-      toast.info(`Tracking: ${currentOrder.trackingNumber}`);
+      toast(`Tracking: ${currentOrder.trackingNumber}`);
     }
   };
 
   const handleContactSupport = () => {
     hapticFeedback.impact('light');
     // Open support chat or contact info
-    toast.info('Contact support: @mezohit_support');
+    toast('Contact support: @mezohit_support');
   };
 
   if (isLoadingCurrent) {
@@ -167,7 +167,7 @@ const OrderDetailPage: React.FC = () => {
             <span className="ml-2 font-medium capitalize">{currentOrder.status}</span>
           </div>
         </div>
-        
+
         <div className="text-2xl font-bold text-telegram-text">
           {formatPrice(currentOrder.total, currentOrder.currency)}
         </div>
@@ -239,7 +239,7 @@ const OrderDetailPage: React.FC = () => {
                   </div>
                 )}
               </div>
-              
+
               <div className="flex-1 min-w-0">
                 <h3 className="font-medium text-telegram-text mb-1">{item.name}</h3>
                 {item.selectedVariant && (
@@ -341,8 +341,8 @@ const OrderDetailPage: React.FC = () => {
           <div className="flex justify-between">
             <span className="text-telegram-text-secondary">Payment Status</span>
             <span className={`font-medium capitalize ${
-              currentOrder.paymentStatus === 'paid' 
-                ? 'text-success-600' 
+              currentOrder.paymentStatus === 'paid'
+                ? 'text-success-600'
                 : currentOrder.paymentStatus === 'failed'
                 ? 'text-error-600'
                 : 'text-warning-600'
@@ -379,14 +379,14 @@ const OrderDetailPage: React.FC = () => {
             Cancel Order
           </button>
         )}
-        
+
         <button
           onClick={handleContactSupport}
           className="w-full btn-secondary"
         >
           Contact Support
         </button>
-        
+
         <button
           onClick={() => navigate('/orders')}
           className="w-full btn-primary"

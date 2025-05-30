@@ -4,6 +4,7 @@ import { MongooseModule } from '@nestjs/mongoose';
 import { ThrottlerModule } from '@nestjs/throttler';
 import { ServeStaticModule } from '@nestjs/serve-static';
 import { join } from 'path';
+import * as path from 'path';
 
 // Modules
 import { AuthModule } from './modules/auth/auth.module';
@@ -29,32 +30,26 @@ import { RedisModule } from './common/redis/redis.module';
     }),
 
     // Rate limiting
-    ThrottlerModule.forRoot([
-      {
-        ttl: 60000, // 1 minute
-        limit: 100, // 100 requests per minute
-      },
-    ]),
+    ThrottlerModule.forRoot({
+      ttl: 60000, // 1 minute
+      limit: 100, // 100 requests per minute
+    }),
 
     // Database
     MongooseModule.forRootAsync({
       imports: [ConfigModule],
       useFactory: async (configService: ConfigService) => ({
         uri: configService.get<string>('MONGODB_URI'),
-        retryWrites: true,
-        w: 'majority',
         maxPoolSize: 10,
         serverSelectionTimeoutMS: 5000,
         socketTimeoutMS: 45000,
-        bufferMaxEntries: 0,
-        bufferCommands: false,
       }),
       inject: [ConfigService],
     }),
 
     // Static files serving
     ServeStaticModule.forRoot({
-      rootPath: join(__dirname, '..', 'uploads'),
+      rootPath: join(process.cwd(), 'uploads'),
       serveRoot: '/api/uploads',
     }),
 

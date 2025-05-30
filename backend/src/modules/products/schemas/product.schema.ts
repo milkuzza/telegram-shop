@@ -11,6 +11,9 @@ export class Product {
   @Prop({ required: true })
   name: string;
 
+  @Prop({ unique: true })
+  slug: string;
+
   @Prop({ required: true })
   description: string;
 
@@ -136,8 +139,22 @@ export class Product {
 
 export const ProductSchema = SchemaFactory.createForClass(Product);
 
+// Generate slug from name before saving
+ProductSchema.pre('save', function(next) {
+  if (this.isModified('name') || this.isNew) {
+    this.slug = this.name
+      .toLowerCase()
+      .replace(/[^a-z0-9\s-]/g, '')
+      .replace(/\s+/g, '-')
+      .replace(/-+/g, '-')
+      .replace(/^-+|-+$/g, ''); // Remove leading and trailing dashes
+  }
+  next();
+});
+
 // Indexes for better performance
 ProductSchema.index({ name: 'text', description: 'text', tags: 'text' });
+ProductSchema.index({ slug: 1 }, { unique: true });
 ProductSchema.index({ categoryId: 1 });
 ProductSchema.index({ isActive: 1 });
 ProductSchema.index({ isFeatured: 1 });

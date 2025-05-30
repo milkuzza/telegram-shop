@@ -5,7 +5,7 @@ import { RootState, AppDispatch } from '../store/store';
 import { fetchProductById, fetchRelatedProducts, addProductReview } from '../store/slices/productsSlice';
 import { addToCart } from '../store/slices/cartSlice';
 import { useTelegramWebApp } from '../hooks/useTelegramWebApp';
-import { Star, Heart, Share2, ShoppingCart, Plus, Minus } from 'lucide-react';
+import { Star, Heart, Share2, Plus, Minus } from 'lucide-react';
 import { Swiper, SwiperSlide } from 'swiper/react';
 import 'swiper/css';
 import 'swiper/css/pagination';
@@ -19,16 +19,16 @@ const ProductDetailPage: React.FC = () => {
   const { id } = useParams<{ id: string }>();
   const navigate = useNavigate();
   const dispatch = useDispatch<AppDispatch>();
-  
+
   const [quantity, setQuantity] = useState(1);
   const [selectedVariant, setSelectedVariant] = useState<string>('');
   const [showReviewForm, setShowReviewForm] = useState(false);
   const [activeImageIndex, setActiveImageIndex] = useState(0);
 
-  const { currentProduct, relatedProducts, isLoadingCurrent, isLoadingRelated } = useSelector(
+  const { currentProduct, relatedProducts, isLoadingCurrent } = useSelector(
     (state: RootState) => state.products
   );
-  const { isAuthenticated, user } = useSelector((state: RootState) => state.auth);
+  const { isAuthenticated } = useSelector((state: RootState) => state.auth);
   const { hapticFeedback, showMainButton, hideMainButton } = useTelegramWebApp();
 
   useEffect(() => {
@@ -43,20 +43,20 @@ const ProductDetailPage: React.FC = () => {
       showMainButton('Add to Cart', handleAddToCart);
     }
     return () => hideMainButton();
-  }, [currentProduct, quantity, selectedVariant]);
+  }, [currentProduct, quantity, selectedVariant, showMainButton, hideMainButton]);
 
   const handleAddToCart = async () => {
     if (!currentProduct) return;
-    
+
     hapticFeedback.impact('medium');
-    
+
     try {
       await dispatch(addToCart({
         productId: currentProduct._id,
         quantity,
         selectedVariant: selectedVariant || undefined,
       })).unwrap();
-      
+
       hapticFeedback.notification('success');
       toast.success('Added to cart!');
     } catch (error) {
@@ -89,14 +89,14 @@ const ProductDetailPage: React.FC = () => {
 
   const handleReviewSubmit = async (rating: number, comment: string) => {
     if (!currentProduct) return;
-    
+
     try {
       await dispatch(addProductReview({
         productId: currentProduct._id,
         rating,
         comment,
       })).unwrap();
-      
+
       setShowReviewForm(false);
       hapticFeedback.notification('success');
       toast.success('Review added successfully!');
@@ -141,7 +141,7 @@ const ProductDetailPage: React.FC = () => {
         <Swiper
           modules={[Pagination]}
           pagination={{ clickable: true }}
-          onSlideChange={(swiper) => setActiveImageIndex(swiper.activeIndex)}
+          onSlideChange={(swiper: any) => setActiveImageIndex(swiper.activeIndex)}
           className="aspect-square"
         >
           {images.map((image, index) => (
@@ -154,7 +154,7 @@ const ProductDetailPage: React.FC = () => {
             </SwiperSlide>
           ))}
         </Swiper>
-        
+
         {/* Action buttons */}
         <div className="absolute top-4 right-4 flex flex-col space-y-2">
           <button
@@ -182,7 +182,7 @@ const ProductDetailPage: React.FC = () => {
           <h1 className="text-2xl font-bold text-telegram-text mb-2">
             {currentProduct.name}
           </h1>
-          
+
           <div className="flex items-center mb-3">
             <div className="flex items-center mr-4">
               {[...Array(5)].map((_, i) => (
@@ -233,7 +233,7 @@ const ProductDetailPage: React.FC = () => {
               <div key={key} className="mb-4">
                 <h3 className="font-medium mb-2">{variant.name}</h3>
                 <div className="flex flex-wrap gap-2">
-                  {variant.options.map((option, index) => (
+                  {variant.options.map((option: any, index: number) => (
                     <button
                       key={index}
                       onClick={() => handleVariantChange(option.value)}

@@ -3,17 +3,13 @@ import { useDispatch, useSelector } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
 import { updateUser, logout } from '../store/slices/authSlice';
 import { useTelegramWebApp } from '../hooks/useTelegramWebApp';
-import { 
-  User, 
-  Mail, 
-  Phone, 
-  MapPin, 
-  Settings, 
-  Heart, 
-  Package, 
+import {
+  User,
+  Settings,
+  Heart,
+  Package,
   CreditCard,
   Bell,
-  Globe,
   LogOut,
   Edit3,
   Save,
@@ -29,6 +25,7 @@ interface ProfileForm {
   phone?: string;
   address?: string;
   city?: string;
+  postalCode?: string;
   country?: string;
 }
 
@@ -36,7 +33,7 @@ const ProfilePage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const { user, isLoading } = useSelector((state: RootState) => state.auth);
   const { hapticFeedback } = useTelegramWebApp();
-  
+
   const [isEditing, setIsEditing] = useState(false);
   const [activeTab, setActiveTab] = useState('profile');
 
@@ -53,6 +50,7 @@ const ProfilePage: React.FC = () => {
       phone: user?.phone || '',
       address: user?.shippingAddress?.address || '',
       city: user?.shippingAddress?.city || '',
+      postalCode: user?.shippingAddress?.postalCode || '',
       country: user?.shippingAddress?.country || '',
     },
   });
@@ -67,7 +65,7 @@ const ProfilePage: React.FC = () => {
 
   const onSubmit = async (data: ProfileForm) => {
     hapticFeedback.impact('medium');
-    
+
     try {
       await dispatch(updateUser({
         firstName: data.firstName,
@@ -75,13 +73,14 @@ const ProfilePage: React.FC = () => {
         email: data.email,
         phone: data.phone,
         shippingAddress: {
-          address: data.address,
-          city: data.city,
-          country: data.country,
-          phone: data.phone,
+          address: data.address || '',
+          city: data.city || '',
+          postalCode: data.postalCode || '',
+          country: data.country || '',
+          phone: data.phone || '',
         },
-      })).unwrap();
-      
+      }));
+
       setIsEditing(false);
       hapticFeedback.notification('success');
       toast.success('Profile updated successfully!');
@@ -184,7 +183,7 @@ const ProfilePage: React.FC = () => {
             {/* Personal Information */}
             <div className="bg-white rounded-lg border border-telegram-border p-4">
               <h2 className="font-semibold text-telegram-text mb-4">Personal Information</h2>
-              
+
               <div className="grid grid-cols-2 gap-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">First Name</label>
@@ -197,7 +196,7 @@ const ProfilePage: React.FC = () => {
                     <p className="text-error-500 text-xs mt-1">{errors.firstName.message}</p>
                   )}
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-1">Last Name</label>
                   <input
@@ -242,7 +241,7 @@ const ProfilePage: React.FC = () => {
             {/* Address Information */}
             <div className="bg-white rounded-lg border border-telegram-border p-4">
               <h2 className="font-semibold text-telegram-text mb-4">Shipping Address</h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Address</label>
@@ -264,7 +263,7 @@ const ProfilePage: React.FC = () => {
                       placeholder="New York"
                     />
                   </div>
-                  
+
                   <div>
                     <label className="block text-sm font-medium mb-1">Country</label>
                     <select
@@ -304,7 +303,7 @@ const ProfilePage: React.FC = () => {
             {/* Quick Actions */}
             <div className="bg-white rounded-lg border border-telegram-border p-4">
               <h2 className="font-semibold text-telegram-text mb-4">Quick Actions</h2>
-              
+
               <div className="space-y-3">
                 <button className="w-full flex items-center justify-between p-3 border border-telegram-border rounded-lg hover:bg-gray-50">
                   <div className="flex items-center">
@@ -313,7 +312,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <span className="text-telegram-text-secondary">→</span>
                 </button>
-                
+
                 <button className="w-full flex items-center justify-between p-3 border border-telegram-border rounded-lg hover:bg-gray-50">
                   <div className="flex items-center">
                     <Package className="w-5 h-5 text-telegram-blue mr-3" />
@@ -321,7 +320,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <span className="text-telegram-text-secondary">→</span>
                 </button>
-                
+
                 <button className="w-full flex items-center justify-between p-3 border border-telegram-border rounded-lg hover:bg-gray-50">
                   <div className="flex items-center">
                     <CreditCard className="w-5 h-5 text-telegram-blue mr-3" />
@@ -335,7 +334,7 @@ const ProfilePage: React.FC = () => {
             {/* Account Actions */}
             <div className="bg-white rounded-lg border border-telegram-border p-4">
               <h2 className="font-semibold text-telegram-text mb-4">Account</h2>
-              
+
               <button
                 onClick={handleLogout}
                 className="w-full flex items-center justify-center p-3 text-error-500 border border-error-500 rounded-lg hover:bg-error-50"
@@ -352,7 +351,7 @@ const ProfilePage: React.FC = () => {
             {/* Notification Settings */}
             <div className="bg-white rounded-lg border border-telegram-border p-4">
               <h2 className="font-semibold text-telegram-text mb-4">Notifications</h2>
-              
+
               <div className="space-y-4">
                 <div className="flex items-center justify-between">
                   <div>
@@ -363,7 +362,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <input type="checkbox" defaultChecked className="toggle" />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">Promotions</h3>
@@ -373,7 +372,7 @@ const ProfilePage: React.FC = () => {
                   </div>
                   <input type="checkbox" defaultChecked className="toggle" />
                 </div>
-                
+
                 <div className="flex items-center justify-between">
                   <div>
                     <h3 className="font-medium">New Products</h3>
@@ -389,7 +388,7 @@ const ProfilePage: React.FC = () => {
             {/* Language & Region */}
             <div className="bg-white rounded-lg border border-telegram-border p-4">
               <h2 className="font-semibold text-telegram-text mb-4">Language & Region</h2>
-              
+
               <div className="space-y-4">
                 <div>
                   <label className="block text-sm font-medium mb-1">Language</label>
@@ -400,7 +399,7 @@ const ProfilePage: React.FC = () => {
                     <option value="fr">Français</option>
                   </select>
                 </div>
-                
+
                 <div>
                   <label className="block text-sm font-medium mb-1">Currency</label>
                   <select className="input">

@@ -24,6 +24,14 @@ import FavoritesPage from './pages/FavoritesPage';
 import SearchPage from './pages/SearchPage';
 import NotFoundPage from './pages/NotFoundPage';
 
+// Admin Pages
+import AdminLogin from './pages/admin/AdminLogin';
+import AdminDashboard from './pages/admin/AdminDashboard';
+import ProductsManagement from './pages/admin/ProductsManagement';
+import ProductForm from './pages/admin/ProductForm';
+import Analytics from './pages/admin/Analytics';
+import AdminProtectedRoute from './components/Admin/AdminProtectedRoute';
+
 // Hooks
 import { useTelegramWebApp } from './hooks/useTelegramWebApp';
 
@@ -50,6 +58,35 @@ function App() {
   return (
     <div className="App min-h-screen bg-primary">
       <Routes>
+        {/* Admin routes (without Layout) */}
+        <Route path="/admin/login" element={<AdminLogin />} />
+        <Route path="/admin/dashboard" element={
+          <AdminProtectedRoute>
+            <AdminDashboard />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/products" element={
+          <AdminProtectedRoute>
+            <ProductsManagement />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/products/new" element={
+          <AdminProtectedRoute>
+            <ProductForm />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/products/:id/edit" element={
+          <AdminProtectedRoute>
+            <ProductForm />
+          </AdminProtectedRoute>
+        } />
+        <Route path="/admin/analytics" element={
+          <AdminProtectedRoute>
+            <Analytics />
+          </AdminProtectedRoute>
+        } />
+
+        {/* Main app routes (with Layout) */}
         <Route path="/" element={<Layout />}>
           {/* Public routes */}
           <Route index element={<HomePage />} />
@@ -57,7 +94,7 @@ function App() {
           <Route path="products/:id" element={<ProductDetailPage />} />
           <Route path="category/:slug" element={<CategoryPage />} />
           <Route path="search" element={<SearchPage />} />
-          
+
           {/* Protected routes */}
           <Route path="cart" element={
             <ProtectedRoute>
@@ -89,7 +126,7 @@ function App() {
               <FavoritesPage />
             </ProtectedRoute>
           } />
-          
+
           {/* 404 page */}
           <Route path="*" element={<NotFoundPage />} />
         </Route>

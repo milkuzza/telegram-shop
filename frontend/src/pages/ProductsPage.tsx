@@ -52,12 +52,13 @@ const ProductsPage: React.FC = () => {
       limit: pagination.limit,
       ...filters,
     };
+    console.log('ProductsPage: Fetching products with params:', params);
     dispatch(fetchProducts(params));
   }, [dispatch, filters, pagination.page, pagination.limit]);
 
   const handleFilterChange = (newFilters: any) => {
     hapticFeedback.impact('light');
-    
+
     // Update URL params
     const params = new URLSearchParams();
     Object.entries(newFilters).forEach(([key, value]) => {
@@ -110,7 +111,7 @@ const ProductsPage: React.FC = () => {
                 <List className="w-4 h-4" />
               </button>
             </div>
-            
+
             {/* Filter button */}
             <button
               onClick={toggleFilters}
@@ -178,8 +179,8 @@ const ProductsPage: React.FC = () => {
         ) : (
           <>
             <div className={`${
-              viewMode === 'grid' 
-                ? 'grid grid-cols-2 gap-3' 
+              viewMode === 'grid'
+                ? 'grid grid-cols-2 gap-3'
                 : 'space-y-3'
             }`}>
               {products.map((product) => (

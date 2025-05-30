@@ -106,9 +106,12 @@ export const fetchProducts = createAsyncThunk(
   'products/fetchProducts',
   async (params: Record<string, any> = {}, { rejectWithValue }) => {
     try {
+      console.log('fetchProducts: API call with params:', params);
       const response = await productsAPI.getProducts(params);
+      console.log('fetchProducts: API response:', response);
       return response;
     } catch (error: any) {
+      console.error('fetchProducts: API error:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to fetch products');
     }
   }
@@ -154,9 +157,12 @@ export const searchProducts = createAsyncThunk(
   'products/searchProducts',
   async ({ query, limit = 20 }: { query: string; limit?: number }, { rejectWithValue }) => {
     try {
+      console.log('searchProducts: API call with query:', query, 'limit:', limit);
       const response = await productsAPI.searchProducts(query, limit);
+      console.log('searchProducts: API response:', response);
       return response;
     } catch (error: any) {
+      console.error('searchProducts: API error:', error);
       return rejectWithValue(error.response?.data?.message || 'Failed to search products');
     }
   }

@@ -8,11 +8,20 @@ interface User {
   lastName?: string;
   username?: string;
   photoUrl?: string;
+  email?: string;
+  phone?: string;
   isPremium: boolean;
   preferences?: {
     notifications: boolean;
     language: string;
     currency: string;
+  };
+  shippingAddress?: {
+    address: string;
+    city: string;
+    postalCode: string;
+    country: string;
+    phone: string;
   };
   cart?: {
     items: Array<{
@@ -64,7 +73,7 @@ export const loadUser = createAsyncThunk(
       if (!state.auth.token) {
         throw new Error('No token found');
       }
-      
+
       const response = await authAPI.getMe();
       return response.user;
     } catch (error: any) {
@@ -140,7 +149,7 @@ const authSlice = createSlice({
         state.error = action.payload as string;
         state.isAuthenticated = false;
       })
-      
+
       // Load user
       .addCase(loadUser.pending, (state) => {
         state.isLoading = true;
@@ -159,7 +168,7 @@ const authSlice = createSlice({
         state.user = null;
         state.token = null;
       })
-      
+
       // Validate token
       .addCase(validateToken.pending, (state) => {
         state.isLoading = true;

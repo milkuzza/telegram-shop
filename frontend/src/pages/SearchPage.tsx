@@ -13,11 +13,11 @@ import { debounce } from 'lodash';
 const SearchPage: React.FC = () => {
   const dispatch = useDispatch<AppDispatch>();
   const [searchParams, setSearchParams] = useSearchParams();
-  
+
   const { searchResults, isSearching } = useSelector((state: RootState) => state.products);
   const { searchHistory } = useSelector((state: RootState) => state.ui);
   const { hapticFeedback } = useTelegramWebApp();
-  
+
   const [query, setQuery] = useState(searchParams.get('q') || '');
   const [showSuggestions, setShowSuggestions] = useState(false);
 
@@ -37,6 +37,7 @@ const SearchPage: React.FC = () => {
   const debouncedSearch = useCallback(
     debounce((searchQuery: string) => {
       if (searchQuery.trim().length >= 2) {
+        console.log('SearchPage: Searching for:', searchQuery.trim());
         dispatch(searchProducts({ query: searchQuery.trim() }));
         setSearchParams({ q: searchQuery.trim() });
       } else {
@@ -50,6 +51,7 @@ const SearchPage: React.FC = () => {
   useEffect(() => {
     const initialQuery = searchParams.get('q');
     if (initialQuery) {
+      console.log('SearchPage: Initial search for:', initialQuery);
       setQuery(initialQuery);
       dispatch(searchProducts({ query: initialQuery }));
     }
@@ -69,7 +71,7 @@ const SearchPage: React.FC = () => {
 
   const handleSearch = (searchQuery: string) => {
     hapticFeedback.impact('light');
-    
+
     if (searchQuery.trim().length >= 2) {
       setQuery(searchQuery);
       setShowSuggestions(false);
@@ -159,7 +161,7 @@ const SearchPage: React.FC = () => {
                 </h3>
                 <div className="space-y-1">
                   {popularSearches
-                    .filter(item => 
+                    .filter(item =>
                       item.toLowerCase().includes(query.toLowerCase())
                     )
                     .slice(0, 5)
@@ -233,7 +235,7 @@ const SearchPage: React.FC = () => {
             <p className="text-telegram-text-secondary mb-8">
               We couldn't find any products matching "{query}"
             </p>
-            
+
             <div className="text-left">
               <h3 className="font-medium text-telegram-text mb-4">Try searching for:</h3>
               <div className="flex flex-wrap gap-2">

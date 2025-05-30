@@ -1,10 +1,10 @@
 import { useEffect, useState } from 'react';
 import { useSelector, useDispatch } from 'react-redux';
 import { RootState, AppDispatch } from '../store/store';
-import { 
-  setMainButtonConfig, 
-  setBackButtonVisible, 
-  setHapticFeedbackEnabled 
+import {
+  setMainButtonConfig,
+  setBackButtonVisible,
+  setHapticFeedbackEnabled
 } from '../store/slices/uiSlice';
 
 interface TelegramWebApp {
@@ -47,6 +47,14 @@ export const useTelegramWebApp = () => {
     (state: RootState) => state.ui
   );
 
+  // Check if WebApp is available and properly initialized
+  const isWebAppAvailable = Boolean(
+    webApp &&
+    webApp.platform &&
+    webApp.platform !== 'unknown' &&
+    typeof webApp.showAlert === 'function'
+  );
+
   // Main Button controls
   const setMainButton = (config: {
     text?: string;
@@ -55,30 +63,34 @@ export const useTelegramWebApp = () => {
     color?: string;
     onClick?: () => void;
   }) => {
-    if (!webApp?.MainButton) return;
+    try {
+      if (!isWebAppAvailable || !webApp?.MainButton) return;
 
-    const { text, isVisible, isActive, color, onClick } = config;
+      const { text, isVisible, isActive, color, onClick } = config;
 
-    // Update Redux state
-    dispatch(setMainButtonConfig({
-      text: text || mainButtonConfig.text,
-      isVisible: isVisible !== undefined ? isVisible : mainButtonConfig.isVisible,
-      isActive: isActive !== undefined ? isActive : mainButtonConfig.isActive,
-      color: color || mainButtonConfig.color,
-    }));
+      // Update Redux state
+      dispatch(setMainButtonConfig({
+        text: text || mainButtonConfig.text,
+        isVisible: isVisible !== undefined ? isVisible : mainButtonConfig.isVisible,
+        isActive: isActive !== undefined ? isActive : mainButtonConfig.isActive,
+        color: color || mainButtonConfig.color,
+      }));
 
-    // Update Telegram MainButton
-    if (text) webApp.MainButton.setText(text);
-    if (color) webApp.MainButton.setParams({ color });
-    if (isActive !== undefined) {
-      isActive ? webApp.MainButton.enable() : webApp.MainButton.disable();
-    }
-    if (isVisible !== undefined) {
-      isVisible ? webApp.MainButton.show() : webApp.MainButton.hide();
-    }
-    if (onClick) {
-      webApp.MainButton.offClick(); // Remove previous listeners
-      webApp.MainButton.onClick(onClick);
+      // Update Telegram MainButton
+      if (text) webApp.MainButton.setText(text);
+      if (color) webApp.MainButton.setParams({ color });
+      if (isActive !== undefined) {
+        isActive ? webApp.MainButton.enable() : webApp.MainButton.disable();
+      }
+      if (isVisible !== undefined) {
+        isVisible ? webApp.MainButton.show() : webApp.MainButton.hide();
+      }
+      if (onClick) {
+        // webApp.MainButton.offClick(); // Remove previous listeners
+        webApp.MainButton.onClick(onClick);
+      }
+    } catch (error) {
+      console.warn('Failed to set main button:', error);
     }
   };
 
@@ -92,18 +104,22 @@ export const useTelegramWebApp = () => {
 
   // Back Button controls
   const setBackButton = (isVisible: boolean, onClick?: () => void) => {
-    if (!webApp?.BackButton) return;
+    try {
+      if (!isWebAppAvailable || !webApp?.BackButton) return;
 
-    dispatch(setBackButtonVisible(isVisible));
+      dispatch(setBackButtonVisible(isVisible));
 
-    if (isVisible) {
-      webApp.BackButton.show();
-      if (onClick) {
-        webApp.BackButton.offClick(); // Remove previous listeners
-        webApp.BackButton.onClick(onClick);
+      if (isVisible) {
+        webApp.BackButton.show();
+        if (onClick) {
+          // webApp.BackButton.offClick(); // Remove previous listeners
+          webApp.BackButton.onClick(onClick);
+        }
+      } else {
+        webApp.BackButton.hide();
       }
-    } else {
-      webApp.BackButton.hide();
+    } catch (error) {
+      console.warn('Failed to set back button:', error);
     }
   };
 
@@ -118,17 +134,17 @@ export const useTelegramWebApp = () => {
   // Haptic Feedback
   const hapticFeedback = {
     impact: (style: 'light' | 'medium' | 'heavy' | 'rigid' | 'soft' = 'medium') => {
-      if (hapticFeedbackEnabled && webApp?.HapticFeedback) {
+      if (isWebAppAvailable && hapticFeedbackEnabled && webApp?.HapticFeedback) {
         webApp.HapticFeedback.impactOccurred(style);
       }
     },
     notification: (type: 'error' | 'success' | 'warning' = 'success') => {
-      if (hapticFeedbackEnabled && webApp?.HapticFeedback) {
+      if (isWebAppAvailable && hapticFeedbackEnabled && webApp?.HapticFeedback) {
         webApp.HapticFeedback.notificationOccurred(type);
       }
     },
     selection: () => {
-      if (hapticFeedbackEnabled && webApp?.HapticFeedback) {
+      if (isWebAppAvailable && hapticFeedbackEnabled && webApp?.HapticFeedback) {
         webApp.HapticFeedback.selectionChanged();
       }
     },
@@ -136,20 +152,43 @@ export const useTelegramWebApp = () => {
 
   // Utility functions
   const showAlert = (message: string, callback?: () => void) => {
-    if (webApp?.showAlert) {
-      webApp.showAlert(message, callback);
-    } else {
-      alert(message);
-      callback?.();
+    try {
+      if (isWebAppAvailable && webApp?.showAlert) {
+        webApp.showAlert(message, callback);
+      } else {
+        // Fallback for regular browser - use setTimeout to avoid blocking React
+        console.warn('Telegram WebApp not available:', message);
+        setTimeout(() => {
+          alert(message);
+          callback?.();
+        }, 0);
+      }
+    } catch (error) {
+      // If Telegram API fails, use browser fallback
+      console.warn('Telegram showAlert failed, using browser alert:', error);
+      setTimeout(() => {
+        alert(message);
+        callback?.();
+      }, 0);
     }
   };
 
   const showConfirm = (message: string, callback?: (confirmed: boolean) => void) => {
-    if (webApp?.showConfirm) {
-      webApp.showConfirm(message, callback);
-    } else {
-      const confirmed = confirm(message);
-      callback?.(confirmed);
+    try {
+      if (isWebAppAvailable && webApp?.showConfirm) {
+        webApp.showConfirm(message, callback);
+      } else {
+        setTimeout(() => {
+          const confirmed = window.confirm(message);
+          callback?.(confirmed);
+        }, 0);
+      }
+    } catch (error) {
+      console.warn('Telegram showConfirm failed, using browser confirm:', error);
+      setTimeout(() => {
+        const confirmed = window.confirm(message);
+        callback?.(confirmed);
+      }, 0);
     }
   };
 
@@ -162,9 +201,14 @@ export const useTelegramWebApp = () => {
       text: string;
     }>;
   }, callback?: (buttonId: string) => void) => {
-    if (webApp?.showPopup) {
-      webApp.showPopup(params, callback);
-    } else {
+    try {
+      if (isWebAppAvailable && webApp?.showPopup) {
+        webApp.showPopup(params, callback);
+      } else {
+        showAlert(params.message, () => callback?.('ok'));
+      }
+    } catch (error) {
+      console.warn('Telegram showPopup failed, using showAlert fallback:', error);
       showAlert(params.message, () => callback?.('ok'));
     }
   };
@@ -266,50 +310,51 @@ export const useTelegramWebApp = () => {
     webApp,
     isReady,
     isLoading,
-    
+    isWebAppAvailable,
+
     // Main Button
     setMainButton,
     showMainButton,
     hideMainButton,
     mainButtonConfig,
-    
+
     // Back Button
     setBackButton,
     showBackButton,
     hideBackButton,
     backButtonVisible,
-    
+
     // Haptic Feedback
     hapticFeedback,
     hapticFeedbackEnabled,
-    setHapticFeedbackEnabled: (enabled: boolean) => 
+    setHapticFeedbackEnabled: (enabled: boolean) =>
       dispatch(setHapticFeedbackEnabled(enabled)),
-    
+
     // Dialogs
     showAlert,
     showConfirm,
     showPopup,
-    
+
     // Navigation
     openLink,
     openTelegramLink,
     sendData,
     close,
     expand,
-    
+
     // Clipboard and permissions
     readTextFromClipboard,
     requestWriteAccess,
     requestContact,
-    
+
     // Theme and appearance
     getThemeParams,
     getColorScheme,
-    
+
     // Platform info
     getPlatform,
     getVersion,
-    
+
     // Viewport
     getViewportHeight,
     isExpanded,
